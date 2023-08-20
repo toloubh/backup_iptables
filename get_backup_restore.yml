@@ -1,0 +1,32 @@
+---
+- name: Manage iptables Rules Backup and Restore
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Backup iptables Rules
+      command: iptables-save > /tmp/iptables_backup.txt
+      register: backup_result
+      ignore_errors: yes  # Continue even if the backup fails
+
+    - name: Copy Backup to NFS Server
+      copy:
+        src: /tmp/iptables_backup.txt
+        dest: "/path/to/nfs/mount/point/iptables_backups/{{ ansible_date_time.date }}"
+      when: backup_result.rc == 0
+      notify: Restore iptables Rules
+
+  handlers:
+    - name: Restore iptables Rules
+      block:
+        - name: Ensure Backup Directory Exists
+          file:
+            path: "/tmp/iptables_backup"
+            state: directory
+          changed_when: false
+          
+        - name: Restore iptables Rules
+          command: iptables-restore < /tmp/iptables_backup.txt
+          changed_when: false
+      when: inventory_hostname == ansible_play_hosts[0]  # Only on the first host
+

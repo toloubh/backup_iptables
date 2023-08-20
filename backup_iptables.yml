@@ -1,0 +1,12 @@
+---
+- name: Get iptables backup from server and copy to local system
+  hosts: all
+  become: true
+  tasks:
+    - name: Save iptables rules
+      shell: echo "$(iptables-save)" > iptables_backup_{{ inventory_hostname }}
+    - name: Copy iptables backup to local system
+      fetch:
+        src: iptables_backup_{{ inventory_hostname }}
+        dest: ./backups/
+        flat: yes
